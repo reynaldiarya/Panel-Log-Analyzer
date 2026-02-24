@@ -1081,6 +1081,29 @@ def main():
             default=['2xx', '3xx', '4xx', '5xx']
         )
         
+        st.markdown("**Filter by File Extension**")
+        common_extensions = ['.php', '.html', '.htm', '.js', '.css', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.json', '.xml', '.txt', '.pdf', '.zip']
+        extension_filter = st.multiselect(
+            "Select Extensions",
+            options=['All'] + common_extensions,
+            default=['All'],
+            help="Filter log entries by URL file extension"
+        )
+        
+        url_filter_mode = st.radio(
+            "URL Filter Mode",
+            options=['All URLs', 'Include', 'Exclude'],
+            index=0,
+            horizontal=True,
+            help="Include: show only matching URLs. Exclude: hide matching URLs."
+        )
+        url_filter_text = st.text_area(
+            "URL Keywords (one per line)",
+            height=80,
+            placeholder="/admin\n/wp-login.php\n/api/",
+            help="Enter URL keywords to filter"
+        )
+        
         st.divider()
         
         st.markdown("""
@@ -1139,6 +1162,27 @@ def main():
             code = int(code) // 100
             return f"{code}xx" in status_filter
         df = df[df['status'].apply(status_in_filter)]
+    
+    if extension_filter and 'All' not in extension_filter:
+        def has_extension(url):
+            if not url:
+                return False
+            url_lower = url.lower().split('?')[0].split('#')[0]
+            return any(url_lower.endswith(ext) for ext in extension_filter)
+        df = df[df['url'].apply(has_extension)]
+    
+    if url_filter_text and url_filter_mode != 'All URLs':
+        url_keywords = [kw.strip() for kw in url_filter_text.strip().split('\n') if kw.strip()]
+        if url_keywords:
+            def url_matches(url):
+                if not url:
+                    return False
+                return any(kw.lower() in url.lower() for kw in url_keywords)
+            
+            if url_filter_mode == 'Include':
+                df = df[df['url'].apply(url_matches)]
+            elif url_filter_mode == 'Exclude':
+                df = df[~df['url'].apply(url_matches)]
     
     if date_filter and date_range and len(date_range) == 2:
         start_date = pd.Timestamp(date_range[0])

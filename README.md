@@ -69,6 +69,8 @@
 - Download anomaly reports as CSV
 - Date range filtering
 - HTTP status code filtering
+- **File extension filtering** - Filter by URL file extensions (`.php`, `.html`, `.js`, `.css`, images, etc.)
+- **URL keyword filtering** - Include or exclude URLs containing specific keywords
 
 ## 🛠️ Tech Stack
 
@@ -158,6 +160,49 @@ The application expects Apache/Nginx Combined Log Format:
 | `RANDOM_STATE`          | 42      | Random seed for reproducibility  |
 
 Adjust contamination via the UI slider (0.01 - 0.20).
+
+## 🔍 Data Filtering
+
+### Status Code Filter
+
+Filter log entries by HTTP status code category:
+- 2xx (Success)
+- 3xx (Redirect)
+- 4xx (Client Error)
+- 5xx (Server Error)
+
+### File Extension Filter
+
+Filter log entries by URL file extension:
+
+| Extension | Description |
+| --------- | ----------- |
+| `.php` | PHP scripts |
+| `.html/.htm` | HTML pages |
+| `.js` | JavaScript files |
+| `.css` | Stylesheets |
+| `.jpg/.jpeg/.png/.gif/.svg` | Image files |
+| `.json/.xml` | Data files |
+| `.txt/.pdf/.zip` | Documents & archives |
+
+Select multiple extensions or choose "All" to disable filtering.
+
+### URL Keyword Filter
+
+Filter by URL keywords with two modes:
+
+| Mode | Description |
+| ---- | ----------- |
+| **Include** | Show only URLs containing specified keywords |
+| **Exclude** | Hide URLs containing specified keywords |
+
+Example keywords (one per line):
+```
+/admin
+/wp-login.php
+/api/
+.xmlrpc.php
+```
 
 ## 🎯 Anomaly Detection Features
 
