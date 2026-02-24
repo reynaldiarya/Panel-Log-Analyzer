@@ -6,10 +6,11 @@ with ML-based anomaly detection using Isolation Forest.
 Author: Senior Python Security Developer
 """
 
+import ipaddress
 import logging
 import re
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 import plotly.express as px
@@ -38,6 +39,238 @@ LOG_PATTERN = re.compile(
 
 ANOMALY_CONTAMINATION = 0.05
 RANDOM_STATE = 42
+
+# ============================================================================
+# CDN & TRUSTED IP RANGES
+# ============================================================================
+
+CDN_IP_RANGES: Dict[str, List[str]] = {
+    'Cloudflare': [
+        '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+        '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+        '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+        '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22'
+    ],
+    'Bunny CDN': [
+        '87.249.128.0/19', '87.249.137.0/24', '93.123.39.0/24', '185.93.0.0/20',
+        '185.232.64.0/22', '193.239.84.0/23', '193.239.86.0/23', '194.36.16.0/22',
+        '195.20.12.0/22', '195.181.168.0/23', '195.181.170.0/23', '45.66.208.0/22',
+        '91.121.72.0/24', '91.134.192.0/21', '149.7.16.0/20', '162.253.56.0/22',
+        '172.105.48.0/20', '192.241.192.0/20', '198.98.48.0/20', '206.189.16.0/20',
+        '64.227.0.0/17', '67.205.128.0/18', '68.183.0.0/16', '74.208.0.0/16',
+        '89.58.0.0/17', '89.187.160.0/21', '178.62.128.0/17', '178.239.160.0/20',
+        '188.166.0.0/16', '209.97.128.0/18', '216.239.32.0/19'
+    ],
+    'AWS CloudFront': [
+        '13.249.0.0/14', '18.68.0.0/16', '18.154.0.0/15', '18.164.0.0/15',
+        '52.46.0.0/17', '52.82.128.0/19', '52.84.0.0/14', '54.182.0.0/16',
+        '54.192.0.0/12', '99.84.0.0/16', '99.86.0.0/16', '108.138.0.0/15',
+        '116.129.224.0/19', '130.176.0.0/16', '143.204.0.0/16'
+    ],
+    'Google Cloud CDN': [
+        '34.64.0.0/10', '35.184.0.0/13', '35.192.0.0/14', '35.196.0.0/15',
+        '35.198.0.0/16', '35.199.0.0/17', '35.199.128.0/18', '35.200.0.0/13',
+        '35.208.0.0/12', '104.154.0.0/15', '104.196.0.0/14', '107.167.160.0/19',
+        '107.178.192.0/18', '130.211.0.0/16', '146.148.0.0/17'
+    ],
+    'Fastly': [
+        '23.185.0.0/16', '23.192.0.0/11', '104.156.64.0/18', '104.156.128.0/18',
+        '146.75.0.0/17', '151.101.0.0/16', '157.52.64.0/18', '167.82.0.0/17',
+        '167.82.128.0/20', '167.82.160.0/20', '167.82.224.0/20', '172.111.128.0/18',
+        '185.31.16.0/22', '199.27.72.0/21', '199.232.0.0/16'
+    ],
+    'Akamai': [
+        '23.0.0.0/12', '23.32.0.0/11', '23.64.0.0/14', '23.72.0.0/13',
+        '72.246.0.0/16', '72.247.0.0/16', '88.221.0.0/16', '92.122.0.0/15',
+        '96.6.0.0/15', '96.16.0.0/15', '104.64.0.0/10', '107.178.0.0/16',
+        '184.24.0.0/13', '184.50.0.0/15', '23.192.0.0/11'
+    ],
+    'StackPath': [
+        '151.139.0.0/16', '209.182.192.0/18', '64.125.64.0/18', '64.78.144.0/20',
+        '67.228.0.0/16', '69.164.192.0/19', '74.207.224.0/19', '96.126.96.0/19',
+        '108.59.0.0/16', '198.58.96.0/19', '208.93.192.0/21'
+    ],
+    'KeyCDN': [
+        '79.127.216.0/21', '178.255.152.0/21', '185.172.148.0/22', '37.186.192.0/21',
+        '185.42.144.0/22', '193.105.60.0/22', '194.242.12.0/22'
+    ],
+    'CDN77': [
+        '37.235.32.0/21', '89.187.168.0/21', '185.93.208.0/20', '195.47.192.0/19',
+        '2a02:6b8::/32'
+    ],
+    'Sucuri': [
+        '192.88.134.0/23', '192.88.136.0/23', '208.109.0.0/16', '192.124.249.0/24'
+    ]
+}
+
+BOT_USER_AGENTS: List[str] = [
+    'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
+    'sogou', 'exabot', 'facebot', 'facebookexternalhit', 'ia_archiver',
+    'twitterbot', 'linkedinbot', 'pinterest', 'applebot', 'semrushbot',
+    'ahrefsbot', 'mj12bot', 'dotbot', 'pingdom', 'uptimerobot', 'statuscake'
+]
+
+
+def ip_in_network(ip: str, network: str) -> bool:
+    """
+    Check if an IP address is within a CIDR network range.
+    
+    Args:
+        ip: IP address to check
+        network: CIDR notation network (e.g., '192.168.0.0/16')
+        
+    Returns:
+        True if IP is in network, False otherwise
+    """
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        network_obj = ipaddress.ip_network(network, strict=False)
+        return ip_obj in network_obj
+    except (ValueError, TypeError):
+        return False
+
+
+def detect_cdn(ip: str) -> Optional[str]:
+    """
+    Detect if an IP belongs to a known CDN provider.
+    
+    Args:
+        ip: IP address to check
+        
+    Returns:
+        CDN provider name or None if not detected
+    """
+    for cdn_name, networks in CDN_IP_RANGES.items():
+        for network in networks:
+            if ip_in_network(ip, network):
+                return cdn_name
+    return None
+
+
+def detect_bot(user_agent: str) -> bool:
+    """
+    Check if a user agent string belongs to a known bot/crawler.
+    
+    Args:
+        user_agent: User agent string
+        
+    Returns:
+        True if detected as bot, False otherwise
+    """
+    if not user_agent or user_agent == '-':
+        return False
+    ua_lower = user_agent.lower()
+    return any(bot in ua_lower for bot in BOT_USER_AGENTS)
+
+
+def build_whitelist_networks(whitelist_ips: List[str]) -> Set[str]:
+    """
+    Build a set of networks from IP whitelist for efficient lookup.
+    
+    Args:
+        whitelist_ips: List of IP addresses or CIDR ranges
+        
+    Returns:
+        Set of normalized IP addresses/ranges
+    """
+    networks = set()
+    for item in whitelist_ips:
+        item = item.strip()
+        if not item:
+            continue
+        if '/' in item:
+            networks.add(item)
+        else:
+            networks.add(f"{item}/32")
+    return networks
+
+
+def is_ip_whitelisted(ip: str, whitelist_networks: Set[str]) -> bool:
+    """
+    Check if an IP is in the whitelist.
+    
+    Args:
+        ip: IP address to check
+        whitelist_networks: Set of CIDR networks
+        
+    Returns:
+        True if whitelisted, False otherwise
+    """
+    for network in whitelist_networks:
+        if ip_in_network(ip, network):
+            return True
+    return False
+
+
+def get_ip_reputation(ip: str, df: pd.DataFrame) -> Dict:
+    """
+    Analyze IP reputation based on behavior patterns.
+    
+    Args:
+        ip: IP address to analyze
+        df: DataFrame with log data
+        
+    Returns:
+        Dictionary with reputation indicators
+    """
+    ip_data = df[df['ip'] == ip]
+    
+    if ip_data.empty:
+        return {'reputation': 'Unknown', 'indicators': []}
+    
+    indicators = []
+    reputation_score = 0
+    
+    cdn_name = detect_cdn(ip)
+    if cdn_name:
+        indicators.append(f"CDN: {cdn_name}")
+        reputation_score -= 50
+    
+    unique_uas = ip_data['user_agent'].nunique()
+    if unique_uas > 5:
+        indicators.append(f"Multiple user agents ({unique_uas})")
+        reputation_score += 15
+    
+    error_4xx = (ip_data['status'].astype(int) // 100 == 4).sum()
+    total_requests = len(ip_data)
+    if total_requests > 0 and error_4xx / total_requests > 0.5:
+        indicators.append(f"High 4xx ratio ({error_4xx}/{total_requests})")
+        reputation_score += 20
+    
+    requests_per_second = total_requests
+    if 'timestamp' in ip_data.columns:
+        time_span = (ip_data['timestamp'].max() - ip_data['timestamp'].min()).total_seconds()
+        if time_span > 0:
+            requests_per_second = total_requests / time_span
+    
+    if requests_per_second > 10:
+        indicators.append(f"High request rate ({requests_per_second:.1f}/s)")
+        reputation_score += 25
+    
+    if total_requests > 1000:
+        indicators.append(f"High volume ({total_requests} requests)")
+        reputation_score += 10
+    
+    first_ua = ip_data['user_agent'].iloc[0] if not ip_data.empty else ''
+    if detect_bot(first_ua):
+        indicators.append("Known bot/crawler")
+        reputation_score -= 30
+    
+    if reputation_score >= 50:
+        reputation = 'Suspicious'
+    elif reputation_score >= 25:
+        reputation = 'Questionable'
+    elif reputation_score <= -30:
+        reputation = 'Trusted'
+    else:
+        reputation = 'Neutral'
+    
+    return {
+        'reputation': reputation,
+        'score': reputation_score,
+        'indicators': indicators,
+        'cdn': cdn_name
+    }
 
 # ============================================================================
 # LOG PARSER MODULE
@@ -196,19 +429,31 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================================
 
 @st.cache_data(show_spinner=False)
-def detect_anomalies(features_df: pd.DataFrame, contamination: float = ANOMALY_CONTAMINATION) -> pd.DataFrame:
+def detect_anomalies(
+    features_df: pd.DataFrame, 
+    contamination: float = ANOMALY_CONTAMINATION,
+    whitelist_networks: tuple = (),
+    skip_cdn_ips: bool = True
+) -> pd.DataFrame:
     """
     Detect anomalous IPs using Isolation Forest algorithm.
     
     Args:
         features_df: DataFrame with extracted features
         contamination: Expected proportion of anomalies in dataset
+        whitelist_networks: Tuple of CIDR networks to exclude from detection
+        skip_cdn_ips: Whether to exclude known CDN IPs from anomalies
         
     Returns:
         DataFrame with anomaly scores and predictions
     """
     if features_df.empty or len(features_df) < 2:
-        return features_df.assign(anomaly_score=0, is_anomaly=False)
+        return features_df.assign(anomaly_score=0, is_anomaly=False, threat_level='Normal', is_cdn=False, is_whitelisted=False)
+    
+    whitelist_set = set(whitelist_networks) if whitelist_networks else set()
+    
+    features_df['is_cdn'] = features_df['ip'].apply(lambda x: detect_cdn(x) is not None)
+    features_df['is_whitelisted'] = features_df['ip'].apply(lambda x: is_ip_whitelisted(x, whitelist_set))
     
     feature_columns = [
         'request_count', 'unique_urls', 'error_4xx_ratio', 'error_5xx_ratio',
@@ -240,7 +485,12 @@ def detect_anomalies(features_df: pd.DataFrame, contamination: float = ANOMALY_C
     result_df['anomaly_score'] = -scores
     result_df['is_anomaly'] = predictions == -1
     
-    risk_scores = result_df['anomaly_score'].quantile([0.75, 0.9])
+    if skip_cdn_ips:
+        result_df.loc[result_df['is_cdn'], 'is_anomaly'] = False
+    if whitelist_set:
+        result_df.loc[result_df['is_whitelisted'], 'is_anomaly'] = False
+    
+    risk_scores = result_df[result_df['is_anomaly']]['anomaly_score'].quantile([0.75, 0.9]) if result_df['is_anomaly'].any() else [0, 0]
     
     def classify_threat(row):
         if not row['is_anomaly']:
@@ -462,18 +712,30 @@ def render_method_distribution(df: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def render_anomaly_alerts(anomaly_df: pd.DataFrame):
+def render_anomaly_alerts(anomaly_df: pd.DataFrame, df: pd.DataFrame):
     """
     Render anomaly detection results and alerts.
     
     Args:
         anomaly_df: DataFrame with anomaly detection results
+        df: Original DataFrame with log data for reputation analysis
     """
     st.subheader("🚨 Anomaly Detection Alerts")
     
     if anomaly_df.empty:
         st.info("No data available for anomaly detection.")
         return
+    
+    cdn_count = anomaly_df['is_cdn'].sum() if 'is_cdn' in anomaly_df.columns else 0
+    whitelisted_count = anomaly_df['is_whitelisted'].sum() if 'is_whitelisted' in anomaly_df.columns else 0
+    
+    col_info1, col_info2 = st.columns(2)
+    with col_info1:
+        if cdn_count > 0:
+            st.info(f"ℹ️ {cdn_count} IPs detected as known CDN (excluded from anomalies)")
+    with col_info2:
+        if whitelisted_count > 0:
+            st.info(f"ℹ️ {whitelisted_count} IPs in whitelist (excluded from anomalies)")
     
     anomalies = anomaly_df[anomaly_df['is_anomaly'] == True].copy()
     
@@ -543,6 +805,108 @@ def render_anomaly_alerts(anomaly_df: pd.DataFrame):
     )
     fig.update_layout(height=350)
     st.plotly_chart(fig, use_container_width=True)
+
+
+def render_ip_reputation(anomaly_df: pd.DataFrame, df: pd.DataFrame, top_n: int = 20):
+    """
+    Render IP reputation analysis section.
+    
+    Args:
+        anomaly_df: DataFrame with anomaly detection results
+        df: Original DataFrame with log data
+        top_n: Number of top IPs to display
+    """
+    st.subheader("🔍 IP Reputation Analysis")
+    
+    if anomaly_df.empty:
+        st.info("No data available for reputation analysis.")
+        return
+    
+    ip_reputation_data = []
+    
+    for _, row in anomaly_df.head(top_n).iterrows():
+        ip = row['ip']
+        reputation = get_ip_reputation(ip, df)
+        ip_reputation_data.append({
+            'IP': ip,
+            'Reputation': reputation['reputation'],
+            'CDN': reputation['cdn'] or '-',
+            'Request Count': row.get('request_count', 0),
+            'Score': reputation.get('score', 0),
+            'Indicators': ', '.join(reputation['indicators'][:3]) if reputation['indicators'] else '-'
+        })
+    
+    if ip_reputation_data:
+        reputation_df = pd.DataFrame(ip_reputation_data)
+        
+        def color_reputation(val):
+            if val == 'Trusted':
+                return 'background-color: #d4edda'
+            elif val == 'Suspicious':
+                return 'background-color: #f8d7da'
+            elif val == 'Questionable':
+                return 'background-color: #fff3cd'
+            return ''
+        
+        styled_df = reputation_df.style.applymap(
+            color_reputation, 
+            subset=['Reputation']
+        )
+        
+        st.dataframe(styled_df, use_container_width=True)
+    else:
+        st.info("No IP reputation data available.")
+
+
+def render_cdn_summary(anomaly_df: pd.DataFrame):
+    """
+    Render summary of detected CDN IPs.
+    
+    Args:
+        anomaly_df: DataFrame with anomaly detection results
+    """
+    st.subheader("📡 Detected CDN & Trusted IPs")
+    
+    if anomaly_df.empty or 'is_cdn' not in anomaly_df.columns:
+        st.info("No CDN detection data available.")
+        return
+    
+    cdn_ips = anomaly_df[anomaly_df['is_cdn'] == True]
+    
+    if cdn_ips.empty:
+        st.info("No CDN IPs detected in the log data.")
+        return
+    
+    cdn_summary = []
+    for _, row in cdn_ips.iterrows():
+        cdn_name = detect_cdn(row['ip'])
+        cdn_summary.append({
+            'IP': row['ip'],
+            'CDN Provider': cdn_name or 'Unknown',
+            'Request Count': row.get('request_count', 0),
+            'Unique URLs': row.get('unique_urls', 0)
+        })
+    
+    cdn_df = pd.DataFrame(cdn_summary)
+    cdn_grouped = cdn_df.groupby('CDN Provider').agg({
+        'IP': 'count',
+        'Request Count': 'sum'
+    }).reset_index()
+    cdn_grouped.columns = ['CDN Provider', 'IP Count', 'Total Requests']
+    cdn_grouped = cdn_grouped.sort_values('Total Requests', ascending=False)
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("**CDN Summary**")
+        st.dataframe(cdn_grouped, use_container_width=True)
+    
+    with col2:
+        st.markdown("**CDN IPs Detail**")
+        st.dataframe(
+            cdn_df.sort_values('Request Count', ascending=False).head(10),
+            use_container_width=True
+        )
 
 
 def render_attack_indicators(df: pd.DataFrame):
@@ -634,7 +998,15 @@ def render_dashboard(df: pd.DataFrame, anomaly_df: pd.DataFrame):
     
     st.divider()
     
-    render_anomaly_alerts(anomaly_df)
+    render_anomaly_alerts(anomaly_df, df)
+    
+    st.divider()
+    
+    render_cdn_summary(anomaly_df)
+    
+    st.divider()
+    
+    render_ip_reputation(anomaly_df, df)
     
     st.divider()
     
@@ -674,6 +1046,24 @@ def main():
             value=ANOMALY_CONTAMINATION,
             step=0.01,
             help="Higher values detect more anomalies but may increase false positives"
+        )
+        
+        st.divider()
+        
+        st.header("🛡️ Whitelist & CDN")
+        
+        skip_cdn = st.checkbox(
+            "Exclude Known CDN IPs", 
+            value=True,
+            help="Automatically exclude IPs from known CDN providers (Cloudflare, Bunny, AWS, etc.)"
+        )
+        
+        st.markdown("**IP Whitelist**")
+        whitelist_text = st.text_area(
+            "Enter IPs to exclude (one per line)",
+            height=100,
+            placeholder="192.168.1.1\n10.0.0.0/8\n172.16.0.0/12",
+            help="Enter IP addresses or CIDR ranges to exclude from anomaly detection"
         )
         
         st.divider()
@@ -755,9 +1145,20 @@ def main():
         end_date = pd.Timestamp(date_range[1]) + pd.Timedelta(days=1)
         df = df[(df['timestamp'] >= start_date) & (df['timestamp'] < end_date)]
     
+    whitelist_ips = []
+    if whitelist_text:
+        whitelist_ips = [ip.strip() for ip in whitelist_text.strip().split('\n') if ip.strip()]
+    
+    whitelist_networks = tuple(build_whitelist_networks(whitelist_ips)) if whitelist_ips else ()
+    
     with st.spinner("Running anomaly detection..."):
         features_df = extract_features(df)
-        anomaly_df = detect_anomalies(features_df, contamination=contamination)
+        anomaly_df = detect_anomalies(
+            features_df, 
+            contamination=contamination,
+            whitelist_networks=whitelist_networks,
+            skip_cdn_ips=skip_cdn
+        )
     
     render_dashboard(df, anomaly_df)
     

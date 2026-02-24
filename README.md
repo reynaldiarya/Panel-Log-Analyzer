@@ -34,6 +34,23 @@
 - Threat level classification (High, Medium, Low Risk)
 - Anomaly score distribution visualization
 
+### 🛡️ IP Whitelist & CDN Detection
+
+- **Automatic CDN Detection**: Recognizes IPs from major CDN providers
+  - Cloudflare, Bunny CDN, AWS CloudFront, Google Cloud CDN
+  - Fastly, Akamai, StackPath, KeyCDN, CDN77, Sucuri
+- **IP Whitelist**: Manual exclusion of trusted IPs/ranges
+  - Support for single IPs (e.g., `192.168.1.1`)
+  - Support for CIDR ranges (e.g., `10.0.0.0/8`)
+- **Bot Detection**: Recognizes major search engine crawlers
+  - Googlebot, Bingbot, DuckDuckBot, and more
+
+### 🔍 IP Reputation Analysis
+
+- Automatic reputation scoring per IP
+- Behavior-based indicators
+- CDN attribution display
+
 ### 🔍 Attack Pattern Analysis
 
 - Potential scanning activity detection (high 404 errors)
@@ -164,6 +181,43 @@ The application extracts the following features per IP for anomaly detection:
 | High Risk   | Anomaly score > 90th percentile |
 | Medium Risk | Anomaly score > 75th percentile |
 | Low Risk    | Anomaly score ≤ 75th percentile |
+
+## 🛡️ Whitelist & CDN Detection
+
+### Supported CDN Providers
+
+| Provider        | Detection Method |
+| --------------- | ---------------- |
+| Cloudflare      | IP Range Match   |
+| Bunny CDN       | IP Range Match   |
+| AWS CloudFront  | IP Range Match   |
+| Google Cloud CDN| IP Range Match   |
+| Fastly          | IP Range Match   |
+| Akamai          | IP Range Match   |
+| StackPath       | IP Range Match   |
+| KeyCDN          | IP Range Match   |
+| CDN77           | IP Range Match   |
+| Sucuri          | IP Range Match   |
+
+### IP Whitelist Usage
+
+Enter IPs to exclude from anomaly detection (one per line):
+
+```
+192.168.1.1
+10.0.0.0/8
+172.16.0.0/12
+```
+
+### IP Reputation Indicators
+
+| Indicator              | Impact on Reputation |
+| ---------------------- | -------------------- |
+| Known CDN IP           | Trusted (-50 pts)    |
+| Known Bot/Crawler      | Trusted (-30 pts)    |
+| High 4xx Error Ratio   | Suspicious (+20 pts) |
+| High Request Rate      | Suspicious (+25 pts) |
+| Multiple User Agents   | Questionable (+15 pts) |
 
 ## 📁 Folder Structure
 
