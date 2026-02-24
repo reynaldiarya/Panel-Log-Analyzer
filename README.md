@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png" width="120" alt="Streamlit Logo">
+  <img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-lighttext.png" width="120" alt="Streamlit Logo">
 </p>
 
 <h1 align="center">Security Log Analytics Dashboard</h1>
 
 <p align="center">
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version"></a>
-  <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-1.28+-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit Version"></a>
-  <a href="https://scikit-learn.org/"><img src="https://img.shields.io/badge/scikit--learn-1.3+-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Sklearn Version"></a>
+  <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-1.54+-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit Version"></a>
+  <a href="https://scikit-learn.org/"><img src="https://img.shields.io/badge/scikit--learn-1.8+-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Sklearn Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
@@ -55,26 +55,26 @@
 
 ## 🛠️ Tech Stack
 
-| Technology | Version |
-| ---------- | ------- |
-| Python     | ^3.9    |
-| Streamlit  | ^1.28   |
-| Pandas     | ^2.0    |
-| Plotly     | ^5.18   |
-| scikit-learn | ^1.3  |
-| NumPy      | ^1.24   |
+| Technology   | Version |
+| ------------ | ------- |
+| Python       | ^3.9    |
+| Streamlit    | ^1.54   |
+| Pandas       | ^2.3    |
+| Plotly       | ^6.5    |
+| scikit-learn | ^1.8    |
+| NumPy        | ^2.4    |
 
 ## 📦 Dependencies
 
 ### Core Dependencies
 
-| Package                                           | Version | Description                      |
-| ------------------------------------------------- | ------- | -------------------------------- |
-| [streamlit](https://streamlit.io/)                | >=1.28.0| Web framework for data apps      |
-| [pandas](https://pandas.pydata.org/)              | >=2.0.0 | Data manipulation library        |
-| [plotly](https://plotly.com/python/)              | >=5.18.0| Interactive visualization         |
-| [scikit-learn](https://scikit-learn.org/)         | >=1.3.0 | Machine learning library         |
-| [numpy](https://numpy.org/)                       | >=1.24.0| Numerical computing library       |
+| Package                                   | Version  | Description                 |
+| ----------------------------------------- | -------- | --------------------------- |
+| [streamlit](https://streamlit.io/)        | >=1.54.0 | Web framework for data apps |
+| [pandas](https://pandas.pydata.org/)      | >=2.3.3  | Data manipulation library   |
+| [plotly](https://plotly.com/python/)      | >=6.5.2  | Interactive visualization   |
+| [scikit-learn](https://scikit-learn.org/) | >=1.8.0  | Machine learning library    |
+| [numpy](https://numpy.org/)               | >=2.4.2  | Numerical computing library |
 
 ## 📋 Requirements
 
@@ -87,8 +87,8 @@
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/panel-log-analyzer.git
-cd panel-log-analyzer
+git clone https://github.com/reynaldiarya/Security-Log-Analytics.git
+cd Security-Log-Analytics
 ```
 
 ### 2. Create Virtual Environment
@@ -122,23 +122,23 @@ The application expects Apache/Nginx Combined Log Format:
 
 ### Fields Parsed
 
-| Field       | Description                |
-| ----------- | -------------------------- |
-| IP          | Client IP address          |
-| Timestamp   | Request date and time      |
-| Method      | HTTP method (GET, POST, etc.) |
-| URL         | Requested URL path         |
-| Status      | HTTP status code           |
-| Size        | Response size in bytes     |
-| Referer     | HTTP Referer header        |
-| User Agent  | Client user agent string   |
+| Field      | Description                   |
+| ---------- | ----------------------------- |
+| IP         | Client IP address             |
+| Timestamp  | Request date and time         |
+| Method     | HTTP method (GET, POST, etc.) |
+| URL        | Requested URL path            |
+| Status     | HTTP status code              |
+| Size       | Response size in bytes        |
+| Referer    | HTTP Referer header           |
+| User Agent | Client user agent string      |
 
 ## ⚙️ Configuration
 
-| Parameter              | Default | Description                          |
-| ---------------------- | ------- | ------------------------------------ |
-| `ANOMALY_CONTAMINATION`| 0.05    | Expected proportion of anomalies     |
-| `RANDOM_STATE`         | 42      | Random seed for reproducibility      |
+| Parameter               | Default | Description                      |
+| ----------------------- | ------- | -------------------------------- |
+| `ANOMALY_CONTAMINATION` | 0.05    | Expected proportion of anomalies |
+| `RANDOM_STATE`          | 42      | Random seed for reproducibility  |
 
 Adjust contamination via the UI slider (0.01 - 0.20).
 
@@ -146,16 +146,16 @@ Adjust contamination via the UI slider (0.01 - 0.20).
 
 The application extracts the following features per IP for anomaly detection:
 
-| Feature              | Description                              |
-| -------------------- | ---------------------------------------- |
-| `request_count`      | Total number of requests                 |
-| `unique_urls`        | Number of unique URLs accessed           |
-| `error_4xx_ratio`    | Ratio of 4xx errors to total requests    |
-| `error_5xx_ratio`    | Ratio of 5xx errors to total requests    |
-| `avg_request_size`   | Average response size                    |
-| `requests_per_second`| Request rate                             |
-| `post_ratio`         | Ratio of POST requests                   |
-| `unique_user_agents` | Number of unique user agents             |
+| Feature               | Description                           |
+| --------------------- | ------------------------------------- |
+| `request_count`       | Total number of requests              |
+| `unique_urls`         | Number of unique URLs accessed        |
+| `error_4xx_ratio`     | Ratio of 4xx errors to total requests |
+| `error_5xx_ratio`     | Ratio of 5xx errors to total requests |
+| `avg_request_size`    | Average response size                 |
+| `requests_per_second` | Request rate                          |
+| `post_ratio`          | Ratio of POST requests                |
+| `unique_user_agents`  | Number of unique user agents          |
 
 ### Threat Levels
 
@@ -168,7 +168,7 @@ The application extracts the following features per IP for anomaly detection:
 ## 📁 Folder Structure
 
 ```
-panel-log-analyzer/
+Security-Log-Analytics/
 ├── app.py              # Main Streamlit application
 ├── requirements.txt    # Python dependencies
 ├── LICENSE             # MIT License
