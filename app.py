@@ -6,17 +6,19 @@ with ML-based anomaly detection using Isolation Forest.
 Author: Senior Python Security Developer
 """
 
+import logging
 import re
-import io
 from datetime import datetime
 from typing import Optional, Tuple
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # CONFIGURATION
@@ -72,6 +74,7 @@ def parse_log_line(line: str) -> Optional[dict]:
     return data
 
 
+@st.cache_data(show_spinner=False)
 def parse_log_file(file_content: bytes) -> Tuple[pd.DataFrame, int]:
     """
     Parse entire log file content into a DataFrame.
@@ -102,6 +105,7 @@ def parse_log_file(file_content: bytes) -> Tuple[pd.DataFrame, int]:
             failed_count += 1
     
     if not parsed_records:
+        logger.warning("No records parsed from log file")
         return pd.DataFrame(), failed_count
     
     df = pd.DataFrame(parsed_records)
@@ -109,6 +113,7 @@ def parse_log_file(file_content: bytes) -> Tuple[pd.DataFrame, int]:
     if 'timestamp' in df.columns and df['timestamp'].notna().any():
         df = df.sort_values('timestamp').reset_index(drop=True)
     
+    logger.info(f"Successfully parsed {len(df)} log records, {failed_count} failed")
     return df, failed_count
 
 
@@ -190,6 +195,7 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
 # ANOMALY DETECTION MODULE
 # ============================================================================
 
+@st.cache_data(show_spinner=False)
 def detect_anomalies(features_df: pd.DataFrame, contamination: float = ANOMALY_CONTAMINATION) -> pd.DataFrame:
     """
     Detect anomalous IPs using Isolation Forest algorithm.
@@ -759,14 +765,17 @@ def main():
         st.divider()
         st.markdown("### 📥 Export Results")
         
-        if st.button("Download Anomaly Report"):
-            csv = anomaly_df[anomaly_df['is_anomaly']].to_csv(index=False)
+        anomaly_rows = anomaly_df[anomaly_df['is_anomaly']]
+        if not anomaly_rows.empty:
+            csv = anomaly_rows.to_csv(index=False)
             st.download_button(
-                label="Download CSV",
+                label="Download Anomaly Report (CSV)",
                 data=csv,
                 file_name="anomaly_report.csv",
                 mime="text/csv"
             )
+        else:
+            st.info("No anomalies to export")
 
 
 if __name__ == "__main__":
