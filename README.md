@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/streamlit/streamlit/master/frontend/public/favicon.ico" width="120" alt="Streamlit Logo">
+  <img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png" width="120" alt="Streamlit Logo">
 </p>
 
 <h1 align="center">Security Log Analytics Dashboard</h1>
