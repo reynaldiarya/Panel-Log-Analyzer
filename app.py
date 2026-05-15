@@ -12,7 +12,9 @@ from typing import Tuple
 import pandas as pd
 import streamlit as st
 
-from config import ANOMALY_CONTAMINATION
+from config import get_settings
+
+settings = get_settings()
 from src import (
     parse_log_file, validate_log_format, extract_features,
     detect_anomalies, render_dashboard
@@ -20,7 +22,7 @@ from src import (
 from src.analysis import build_whitelist_networks, detect_cdn, is_ip_whitelisted
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=settings.log_level.upper())
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ def main():
             "Anomaly Sensitivity",
             min_value=0.01,
             max_value=0.20,
-            value=ANOMALY_CONTAMINATION,
+            value=settings.anomaly_contamination,
             step=0.01,
             help="Higher values detect more anomalies but may increase false positives"
         )
@@ -213,6 +215,7 @@ def main():
         anomaly_df = detect_anomalies(
             features_df, 
             contamination=contamination,
+            random_state=settings.random_state,
             whitelist_networks=whitelist_networks,
             skip_cdn_ips=skip_cdn
         )

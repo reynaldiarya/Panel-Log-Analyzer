@@ -2,13 +2,13 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 
-from config.constants import ANOMALY_CONTAMINATION, RANDOM_STATE
 from src.analysis.reputation import detect_cdn, is_ip_whitelisted
 
 
 def detect_anomalies(
     features_df: pd.DataFrame, 
-    contamination: float = ANOMALY_CONTAMINATION,
+    contamination: float = 0.05,
+    random_state: int = 42,
     whitelist_networks: tuple = (),
     skip_cdn_ips: bool = True
 ) -> pd.DataFrame:
@@ -48,7 +48,7 @@ def detect_anomalies(
     model = IsolationForest(
         n_estimators=100,
         contamination=contamination,
-        random_state=RANDOM_STATE,
+        random_state=random_state,
         n_jobs=-1
     )
     
