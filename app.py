@@ -9,14 +9,15 @@ Author: Senior Python Security Developer
 import logging
 from typing import Tuple
 
+import pandas as pd
 import streamlit as st
 
-from config.constants import ANOMALY_CONTAMINATION
-from src.parsers.log_parser import parse_log_file, validate_log_format
-from src.features.extractor import extract_features
-from src.anomaly.detector import detect_anomalies
-from src.visualization.dashboard import render_dashboard
-from src.analysis.reputation import build_whitelist_networks
+from config import ANOMALY_CONTAMINATION
+from src import (
+    parse_log_file, validate_log_format, extract_features,
+    detect_anomalies, render_dashboard
+)
+from src.analysis import build_whitelist_networks, detect_cdn, is_ip_whitelisted
 
 
 logging.basicConfig(level=logging.INFO)
@@ -197,6 +198,15 @@ def main():
         whitelist_ips = [ip.strip() for ip in whitelist_text.strip().split('\n') if ip.strip()]
     
     whitelist_networks = tuple(build_whitelist_networks(whitelist_ips)) if whitelist_ips else ()
+    
+    # Filter out CDN IPs from all analysis if enabled
+    if skip_cdn:
+        df = df[df['ip'].apply(lambda x: detect_cdn(x) is None)]
+    
+    # Filter out whitelisted IPs from all analysis if provided
+    if whitelist_ips:
+        whitelist_set = build_whitelist_networks(whitelist_ips)
+        df = df[~df['ip'].apply(lambda x: is_ip_whitelisted(x, whitelist_set))]
     
     with st.spinner("Running anomaly detection..."):
         features_df = extract_features(df)

@@ -250,11 +250,13 @@ def render_ip_reputation(anomaly_df: pd.DataFrame, df: pd.DataFrame, top_n: int 
         
         def color_reputation(val):
             if val == 'Trusted':
-                return 'background-color: #d4edda'
+                return 'background-color: #d1fae5; color: #065f46'
             elif val == 'Suspicious':
-                return 'background-color: #f8d7da'
+                return 'background-color: #fee2e2; color: #991b1b'
             elif val == 'Questionable':
-                return 'background-color: #fff3cd'
+                return 'background-color: #fef3c7; color: #92400e'
+            elif val == 'Neutral':
+                return 'background-color: #f3f4f6; color: #374151'
             return ''
         
         styled_df = reputation_df.style.map(color_reputation, subset=['Reputation'])

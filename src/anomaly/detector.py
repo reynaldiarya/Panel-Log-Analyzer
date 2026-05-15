@@ -1,14 +1,11 @@
 import pandas as pd
-import streamlit as st
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
-from typing import Tuple
 
 from config.constants import ANOMALY_CONTAMINATION, RANDOM_STATE
 from src.analysis.reputation import detect_cdn, is_ip_whitelisted
 
 
-@st.cache_data(show_spinner=False)
 def detect_anomalies(
     features_df: pd.DataFrame, 
     contamination: float = ANOMALY_CONTAMINATION,
@@ -26,8 +23,9 @@ def detect_anomalies(
     
     whitelist_set = set(whitelist_networks) if whitelist_networks else set()
     
-    features_df['is_cdn'] = features_df['ip'].apply(lambda x: detect_cdn(x) is not None)
-    features_df['is_whitelisted'] = features_df['ip'].apply(
+    result_df = features_df.copy()
+    result_df['is_cdn'] = result_df['ip'].apply(lambda x: detect_cdn(x) is not None)
+    result_df['is_whitelisted'] = result_df['ip'].apply(
         lambda x: is_ip_whitelisted(x, whitelist_set)
     )
     
@@ -37,12 +35,12 @@ def detect_anomalies(
         'requests_per_second', 'error_404_count', 'unique_user_agents'
     ]
     
-    available_features = [col for col in feature_columns if col in features_df.columns]
+    available_features = [col for col in feature_columns if col in result_df.columns]
     
     if not available_features:
-        return features_df.assign(anomaly_score=0, is_anomaly=False)
+        return result_df.assign(anomaly_score=0, is_anomaly=False)
     
-    X = features_df[available_features].values
+    X = result_df[available_features].values
     
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -57,7 +55,6 @@ def detect_anomalies(
     predictions = model.fit_predict(X_scaled)
     scores = model.score_samples(X_scaled)
     
-    result_df = features_df.copy()
     result_df['anomaly_score'] = -scores
     result_df['is_anomaly'] = predictions == -1
     
