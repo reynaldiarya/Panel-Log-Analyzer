@@ -9,9 +9,6 @@ A professional-grade Streamlit application for server access log analysis and ma
   <a href="LICENSE">
     <img alt="License" src="https://img.shields.io/badge/license-MIT-yellow.svg" target="_blank" />
   </a>
-  <a href="https://codecov.io/gh/reynaldiarya/Security-Log-Analytics">
-    <img src="https://codecov.io/gh/reynaldiarya/Security-Log-Analytics/branch/main/graph/badge.svg" />
-  </a>
 </p>
 
 ## Description
